@@ -207,8 +207,7 @@ flatMap ::
   (a -> List b)
   -> List a
   -> List b
-flatMap =
-  error "todo: Course.List#flatMap"
+flatMap f xs = flatten $ map f xs
 
 -- | Flatten a list of lists to a list (again).
 -- HOWEVER, this time use the /flatMap/ function that you just wrote.
@@ -217,8 +216,7 @@ flatMap =
 flattenAgain ::
   List (List a)
   -> List a
-flattenAgain =
-  error "todo: Course.List#flattenAgain"
+flattenAgain xs = flatMap id xs
 
 -- | Convert a list of optional values to an optional list of values.
 --
@@ -245,8 +243,9 @@ flattenAgain =
 seqOptional ::
   List (Optional a)
   -> Optional (List a)
-seqOptional =
-  error "todo: Course.List#seqOptional"
+seqOptional Nil = Full Nil
+seqOptional (Empty :. _) = Empty
+seqOptional ((Full a) :. xs) =  Full (a :. ) A.<*> seqOptional xs
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -268,8 +267,8 @@ find ::
   (a -> Bool)
   -> List a
   -> Optional a
-find =
-  error "todo: Course.List#find"
+find _ Nil = Empty
+find f (x :. xs) = if (f x) then Full x else find f xs
 
 -- | Determine if the length of the given list is greater than 4.
 --
@@ -287,8 +286,7 @@ find =
 lengthGT4 ::
   List a
   -> Bool
-lengthGT4 =
-  error "todo: Course.List#lengthGT4"
+lengthGT4 = not . isEmpty . (drop 4)
 
 -- | Reverse a list.
 --
@@ -304,8 +302,8 @@ lengthGT4 =
 reverse ::
   List a
   -> List a
-reverse =
-  error "todo: Course.List#reverse"
+reverse = foldLeft (\b a -> a :. b) Nil
+
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
 -- then runs the given function for subsequent elements
