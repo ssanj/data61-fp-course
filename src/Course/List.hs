@@ -78,6 +78,8 @@ headOr ::
 headOr _ (h :. _) = h
 headOr x Nil = x
 
+-- other solutions
+-- foldRight const
 
 -- | The product of the elements of a list.
 --
@@ -95,6 +97,10 @@ product ::
 product Nil = 1
 product (h :. t) = h * product t
 
+-- other solutions
+-- foldLeft (*) 1
+
+
 -- | Sum the elements of the list.
 --
 -- >>> sum (1 :. 2 :. 3 :. Nil)
@@ -110,6 +116,9 @@ sum ::
 sum Nil = 0
 sum (h :. t) = h + sum t
 
+-- other solutions
+-- foldLeft (+) 0
+
 
 -- | Return the length of the list.
 --
@@ -122,6 +131,9 @@ length ::
   -> Int
 length Nil = 0
 length (_ :. t) = 1 + length t
+
+-- other solutions
+--  foldLeft (const . succ) 0
 
 -- | Map the given function on each element of the list.
 --
@@ -137,6 +149,9 @@ map ::
   -> List b
 map _ Nil = Nil
 map f (h :. t) = f h :. map f t
+
+-- other solutions
+--  foldRight (\a b -> f a :. b) Nil
 
 -- | Return elements satisfying the given predicate.
 --
@@ -154,6 +169,10 @@ filter ::
   -> List a
 filter _ Nil = Nil
 filter f (h :. t) = if (f h) then  h :. filter f t else filter f t
+
+-- other solutions
+-- filter f =
+--   foldRight (\a -> if f a then (a:.) else id) Nil
 
 -- | Append two lists to a new list.
 --
@@ -177,6 +196,9 @@ filter f (h :. t) = if (f h) then  h :. filter f t else filter f t
 
 infixr 5 ++
 
+-- other solutions
+-- flip (foldRight (:.))
+
 -- | Flatten a list of lists to a list.
 --
 -- >>> flatten ((1 :. 2 :. 3 :. Nil) :. (4 :. 5 :. 6 :. Nil) :. (7 :. 8 :. 9 :. Nil) :. Nil)
@@ -192,6 +214,9 @@ flatten ::
   -> List a
 flatten Nil = Nil
 flatten (xs :. xxs) = foldRight (:.) (flatten xxs) xs
+
+-- other solutions
+-- foldRight (++) Nil
 
 -- | Map a function then flatten to a list.
 --
@@ -209,6 +234,9 @@ flatMap ::
   -> List b
 flatMap f xs = flatten $ map f xs
 
+-- other solutions
+-- point free: flatten . map f
+
 -- | Flatten a list of lists to a list (again).
 -- HOWEVER, this time use the /flatMap/ function that you just wrote.
 --
@@ -217,6 +245,9 @@ flattenAgain ::
   List (List a)
   -> List a
 flattenAgain xs = flatMap id xs
+
+-- other solutions
+-- point free: flatMap id
 
 -- | Convert a list of optional values to an optional list of values.
 --
@@ -246,6 +277,9 @@ seqOptional ::
 seqOptional Nil = Full Nil
 seqOptional (Empty :. _) = Empty
 seqOptional ((Full a) :. xs) =  Full (a :. ) A.<*> seqOptional xs
+
+-- other solutions
+-- foldRight (twiceOptional (:.)) (Full Nil)
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -288,6 +322,12 @@ lengthGT4 ::
   -> Bool
 lengthGT4 = not . isEmpty . (drop 4)
 
+-- other solutions
+-- lengthGT4 (_:._:._:._:._:._) =
+--  True
+-- lengthGT4 _ =
+--  False
+
 -- | Reverse a list.
 --
 -- >>> reverse Nil
@@ -304,6 +344,8 @@ reverse ::
   -> List a
 reverse = foldLeft (\b a -> a :. b) Nil
 
+-- other solutions
+---  foldLeft (flip (:.)) Nil
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
 -- then runs the given function for subsequent elements
