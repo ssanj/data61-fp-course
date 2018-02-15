@@ -271,8 +271,7 @@ lift1 f fa = lift0 f <*> fa
   f a
   -> f b
   -> f b
-(*>) =
-  error "todo: Course.Applicative#(*>)"
+(*>) fa fb = (flip const) <$> fa <*> fb
 
 -- | Apply, discarding the value of the second argument.
 -- Pronounced, left apply.
@@ -297,8 +296,7 @@ lift1 f fa = lift0 f <*> fa
   f b
   -> f a
   -> f b
-(<*) =
-  error "todo: Course.Applicative#(<*)"
+(<*) fb fa = const <$> fb <*> fa
 
 -- | Sequences a list of structures to a structure of list.
 --
@@ -320,8 +318,8 @@ sequence ::
   Applicative f =>
   List (f a)
   -> f (List a)
-sequence =
-  error "todo: Course.Applicative#sequence"
+sequence = foldRight (\fa acc -> lift2 (:.) fa acc ) (pure Nil)
+
 
 -- | Replicate an effect a given number of times.
 --
@@ -344,13 +342,14 @@ replicateA ::
   Int
   -> f a
   -> f (List a)
-replicateA =
-  error "todo: Course.Applicative#replicateA"
+replicateA n fa = sequence (faList n) where
+  faList n'= if (n' <= 0) then Nil else fa :. faList (n' - 1)
 
 -- | Filter a list with a predicate that produces an effect.
 --
 -- >>> filtering (ExactlyOne . even) (4 :. 5 :. 6 :. Nil)
 -- ExactlyOne [4,6]
+-- (ExactlyOne True :. ExactlyOne False :. ExactlyOne True :. Nil)
 --
 -- >>> filtering (\a -> if a > 13 then Empty else Full (a <= 7)) (4 :. 5 :. 6 :. Nil)
 -- Full [4,5,6]
@@ -370,10 +369,12 @@ replicateA =
 filtering ::
   Applicative f =>
   (a -> f Bool)
-  -> List a
+  -> List a -- List (f Bool) -> List (f a) -> f (List a)
   -> f (List a)
-filtering =
-  error "todo: Course.Applicative#filtering"
+filtering p =  foldRight (\a ->  lift2 (\b acc -> if b then (a :. acc) else acc) (p a)) (pure Nil)
+
+-- other solutions
+--- foldRight (\a -> lift2 (\b -> if b then (a:.) else id) (p a)) (pure Nil)
 
 -----------------------
 -- SUPPORT LIBRARIES --
