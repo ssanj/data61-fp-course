@@ -273,6 +273,9 @@ lift1 f fa = lift0 f <*> fa
   -> f b
 (*>) fa fb = (flip const) <$> fa <*> fb
 
+-- other solutions
+-- lift2 (const id)
+
 -- | Apply, discarding the value of the second argument.
 -- Pronounced, left apply.
 --
@@ -298,6 +301,9 @@ lift1 f fa = lift0 f <*> fa
   -> f b
 (<*) fb fa = const <$> fb <*> fa
 
+-- other solutions
+-- lift2 const
+
 -- | Sequences a list of structures to a structure of list.
 --
 -- >>> sequence (ExactlyOne 7 :. ExactlyOne 8 :. ExactlyOne 9 :. Nil)
@@ -320,6 +326,8 @@ sequence ::
   -> f (List a)
 sequence = foldRight (\fa acc -> lift2 (:.) fa acc ) (pure Nil)
 
+-- other solutions
+-- foldRight (lift2 (:.)) (pure Nil)
 
 -- | Replicate an effect a given number of times.
 --
@@ -344,6 +352,9 @@ replicateA ::
   -> f (List a)
 replicateA n fa = sequence (faList n) where
   faList n'= if (n' <= 0) then Nil else fa :. faList (n' - 1)
+
+-- other solutions
+-- sequence . replicate n
 
 -- | Filter a list with a predicate that produces an effect.
 --
