@@ -257,8 +257,7 @@ data Logger l a =
 -- >>> (+3) <$> Logger (listh [1,2]) 3
 -- Logger [1,2] 6
 instance Functor (Logger l) where
-  (<$>) =
-    error "todo: Course.StateT (<$>)#instance (Logger l)"
+  (<$>) ab (Logger log a) = Logger log (ab a)
 
 -- | Implement the `Applicative` instance for `Logger`.
 --
@@ -268,10 +267,8 @@ instance Functor (Logger l) where
 -- >>> Logger (listh [1,2]) (+7) <*> Logger (listh [3,4]) 3
 -- Logger [1,2,3,4] 10
 instance Applicative (Logger l) where
-  pure =
-    error "todo: Course.StateT pure#instance (Logger l)"
-  (<*>) =
-    error "todo: Course.StateT (<*>)#instance (Logger l)"
+  pure = Logger Nil
+  (<*>) (Logger log1 ab) (Logger log2 a) = Logger (log1 ++ log2) (ab a)
 
 -- | Implement the `Monad` instance for `Logger`.
 -- The `bind` implementation must append log values to maintain associativity.
@@ -279,8 +276,9 @@ instance Applicative (Logger l) where
 -- >>> (\a -> Logger (listh [4,5]) (a+3)) =<< Logger (listh [1,2]) 3
 -- Logger [1,2,4,5] 6
 instance Monad (Logger l) where
-  (=<<) =
-    error "todo: Course.StateT (=<<)#instance (Logger l)"
+-- (=<<) (a -> Logger l b) -> Logger l a -> Logger l b
+  (=<<) afb (Logger log1 a) = let (Logger log2 b) = afb a in
+                              Logger (log1 ++ log2) b
 
 -- | A utility function for producing a `Logger` with one log value.
 --
@@ -290,8 +288,8 @@ log1 ::
   l
   -> a
   -> Logger l a
-log1 =
-  error "todo: Course.StateT#log1"
+log1 l = Logger (l :. Nil)
+
 
 -- | Remove all duplicate integers from a list. Produce a log as you go.
 -- If there is an element above 100, then abort the entire computation and produce no result.
@@ -310,6 +308,56 @@ log1 =
 distinctG ::
   (Integral a, Show a) =>
   List a
-  -> Logger Chars (Optional (List a))
-distinctG =
-  error "todo: Course.StateT#distinctG"
+  -> Logger Chars (Optional (List a)) -- StateT Set (OptionalT (Logger Chars)) a, Logger Chars (Optional)
+  -- filtering :: Applicative f => (a -> f Bool) -> List a -> f (List a)
+  -- f == State Set (OptionalT (Logger Chars))
+  -- filtering :: Applicative f => (a -> f Bool) -> List a -> f (List a)
+distinctG xs =
+  let filtered =
+        filtering (\a ->
+          if isOverHundred a then logOverHundred a
+          else if isEven a then logEven a
+          else logOthers a
+        ) xs
+
+      result =  runOptionalT $ evalT filtered S.empty
+  in result
+
+                                -- s -> m (a, s)
+                                -- s -> (Logger Chars Maybe (a, s))
+                                -- s -> Logger Char (Optional (Bool, S.Set a))
+
+isEven :: Integral a => a -> Bool
+isEven a =  (a `mod` 2 == 0)
+
+isOverHundred :: Integral a => a -> Bool
+isOverHundred a = (a > 100)
+
+-- blah :: Logger Chars Int
+-- blah  = log1 (listh ("even number: " P.++ (show 2))) 2
+
+-- blah2 :: OptionalT (Logger Chars) Int
+-- blah2  = OptionalT (log1 (listh ("even number: " P.++ (show 2))) (Full 2))
+
+-- blah3 :: StateT (S.Set Int) (OptionalT (Logger Chars)) Int
+-- blah3  = StateT(\s -> OptionalT (log1 (listh ("even number: " P.++ (show 2))) (Full (2, 2 `S.insert` s))))
+
+logEven :: (Ord a, Num a, Show a) => a -> StateT (S.Set a) (OptionalT (Logger Chars)) Bool
+logEven a = StateT (\s -> OptionalT (log1
+                                      (listh ("even number: " P.++ (show a)))
+                                      (Full (a `S.notMember` s, a `S.insert` s))
+                          )
+            )
+
+logOverHundred :: (Ord a, Num a, Show a) => a -> StateT (S.Set a) (OptionalT (Logger Chars)) Bool
+logOverHundred a = StateT(\s -> OptionalT (log1
+                                            (listh ("aborting > 100: " P.++ (show a)))
+                                            Empty
+                                )
+                   )
+
+logOthers :: (Ord a, Num a, Show a) => a -> StateT (S.Set a) (OptionalT (Logger Chars)) Bool
+logOthers a = StateT(\s -> OptionalT (pure
+                                        (Full (a `S.notMember` s, a `S.insert` s))
+                           )
+              )
