@@ -202,8 +202,9 @@ distinctF ::
   (Ord a, Num a) =>
   List a
   -> Optional (List a)
-distinctF =
-  error "todo: Course.StateT#distinctF"
+distinctF xs = let unique = distinct' xs
+               in
+                  if  (any ( > 100)) unique then Empty else Full (unique)
 
 -- | An `OptionalT` is a functor of an `Optional` value.
 data OptionalT f a =
@@ -216,27 +217,35 @@ data OptionalT f a =
 --
 -- >>> runOptionalT $ (+1) <$> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty]
+--  Functor (<$>) :: (a -> b) -> f a -> f b
 instance Functor f => Functor (OptionalT f) where
-  (<$>) =
-    error "todo: Course.StateT (<$>)#instance (OptionalT f)"
+  (<$>) ab fa = OptionalT ((ab <$>) <$> (runOptionalT fa))
 
 -- | Implement the `Applicative` instance for `OptionalT f` given a Applicative f.
 --
 -- >>> runOptionalT $ OptionalT (Full (+1) :. Full (+2) :. Nil) <*> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty,Full 3,Empty]
 instance Applicative f => Applicative (OptionalT f) where
-  pure =
-    error "todo: Course.StateT pure#instance (OptionalT f)"
-  (<*>) =
-    error "todo: Course.StateT (<*>)#instance (OptionalT f)"
+  pure a = OptionalT (pure $ pure a)
+  -- (<*>) f (a -> b) -> f a -> f b
+  (<*>) ofab ofa = OptionalT(
+                      lift2 (<*>) (runOptionalT ofab) (runOptionalT ofa)
+                    )
 
 -- | Implement the `Monad` instance for `OptionalT f` given a Monad f.
 --
 -- >>> runOptionalT $ (\a -> OptionalT (Full (a+1) :. Full (a+2) :. Nil)) =<< OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Full 3,Empty]
 instance Monad f => Monad (OptionalT f) where
-  (=<<) =
-    error "todo: Course.StateT (=<<)#instance (OptionalT f)"
+  --     (a -> f b) -> f a -> f b
+  (=<<) aotfb otfa = OptionalT (
+                      do oa <- runOptionalT otfa
+                         let result = case oa of
+                                        (Full a) -> aotfb a
+                                        Empty -> OptionalT (pure Empty)
+                         runOptionalT result
+                     )
+
 
 -- | A `Logger` is a pair of a list of log values (`[l]`) and an arbitrary value (`a`).
 data Logger l a =
