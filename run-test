@@ -1,0 +1,2 @@
+#!/bin/bash
+cabal test tasty --show-details=always --test-option=--color=always  --test-option=--pattern=$1
